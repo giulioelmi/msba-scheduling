@@ -1,11 +1,25 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
+import { render } from "@react-email/render";
 import { StudentInviteEmail } from "@/emails/StudentInvite";
 import { CandidateInviteEmail } from "@/emails/CandidateInvite";
 import { MatchNotificationEmail } from "@/emails/MatchNotification";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = process.env.FROM_EMAIL ?? "MSBA Admissions <admissions@example.com>";
+const FROM = process.env.SMTP_FROM ?? "MSBA Admissions <msba@ucla.edu>";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+// Nodemailer transporter using SMTP credentials.
+// Defaults to Microsoft 365 (UCLA's mail server).
+function createTransporter() {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST ?? "smtp.office365.com",
+    port: Number(process.env.SMTP_PORT ?? 587),
+    secure: false, // STARTTLS on port 587
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+}
 
 export async function sendStudentInvite({
   to,
@@ -19,11 +33,13 @@ export async function sendStudentInvite({
   token: string;
 }) {
   const url = `${APP_URL}/s/${token}`;
-  return resend.emails.send({
+  const html = await render(StudentInviteEmail({ studentName, cycleName, url }));
+
+  return createTransporter().sendMail({
     from: FROM,
     to,
     subject: `[MSBA] Volunteer for ${cycleName} Interviews`,
-    react: StudentInviteEmail({ studentName, cycleName, url }),
+    html,
   });
 }
 
@@ -39,11 +55,13 @@ export async function sendCandidateInvite({
   token: string;
 }) {
   const url = `${APP_URL}/a/${token}`;
-  return resend.emails.send({
+  const html = await render(CandidateInviteEmail({ candidateName, cycleName, url }));
+
+  return createTransporter().sendMail({
     from: FROM,
     to,
     subject: `[UCLA MSBA] Schedule Your Interview — ${cycleName}`,
-    react: CandidateInviteEmail({ candidateName, cycleName, url }),
+    html,
   });
 }
 
@@ -64,32 +82,25 @@ export async function sendMatchNotification({
   slotStart: string;
   slotEnd: string;
 }) {
+  const transporter = createTransporter();
+
+  const [studentHtml, candidateHtml] = await Promise.all([
+    render(MatchNotificationEmail({ recipientName: studentName, otherPartyName: candidateName, cycleName, slotStart, slotEnd, role: "student" })),
+    render(MatchNotificationEmail({ recipientName: candidateName, otherPartyName: studentName, cycleName, slotStart, slotEnd, role: "candidate" })),
+  ]);
+
   const [studentResult, candidateResult] = await Promise.all([
-    resend.emails.send({
+    transporter.sendMail({
       from: FROM,
       to: studentEmail,
       subject: `[MSBA] Your Interview Match — ${candidateName}`,
-      react: MatchNotificationEmail({
-        recipientName: studentName,
-        otherPartyName: candidateName,
-        cycleName,
-        slotStart,
-        slotEnd,
-        role: "student",
-      }),
+      html: studentHtml,
     }),
-    resend.emails.send({
+    transporter.sendMail({
       from: FROM,
       to: candidateEmail,
       subject: `[UCLA MSBA] Your Interview is Scheduled`,
-      react: MatchNotificationEmail({
-        recipientName: candidateName,
-        otherPartyName: studentName,
-        cycleName,
-        slotStart,
-        slotEnd,
-        role: "candidate",
-      }),
+      html: candidateHtml,
     }),
   ]);
 
