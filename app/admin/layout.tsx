@@ -19,18 +19,20 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <span className="font-bold text-lg">MSBA Interview Scheduler</span>
           </Link>
 
-          <div className="flex items-center gap-4">
-            <span className="text-blue-200 text-sm hidden sm:block">{user.email}</span>
-            <form action={signOut}>
-              <button
-                type="submit"
-                className="flex items-center gap-1.5 text-sm text-blue-200 hover:text-white transition"
-              >
-                <LogOut className="h-4 w-4" />
-                Sign out
-              </button>
-            </form>
-          </div>
+          {user && (
+            <div className="flex items-center gap-4">
+              <span className="text-blue-200 text-sm hidden sm:block">{user.email}</span>
+              <form action={signOut}>
+                <button
+                  type="submit"
+                  className="flex items-center gap-1.5 text-sm text-blue-200 hover:text-white transition"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
+              </form>
+            </div>
+          )}
         </div>
       </header>
 
