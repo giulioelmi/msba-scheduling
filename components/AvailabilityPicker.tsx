@@ -21,7 +21,9 @@ export default function AvailabilityPicker({
   existingSlots,
   onSuccess,
 }: Props) {
-  const [selected, setSelected] = useState<Set<string>>(new Set(existingSlots));
+  const [selected, setSelected] = useState<Set<string>>(
+    new Set(existingSlots.map((s) => new Date(s).toISOString()))
+  );
   const [isPending, setIsPending] = useState(false);
   const [submitted, setSubmitted] = useState(existingSlots.length > 0);
   const [error, setError] = useState<string | null>(null);

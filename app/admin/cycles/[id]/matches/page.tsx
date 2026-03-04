@@ -1,12 +1,13 @@
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { generateMatches, sendAllMatchNotifications, deleteMatch } from "@/app/actions/matching";
+import { generateMatches, sendAllMatchNotifications, deleteMatch, clearAllMatches } from "@/app/actions/matching";
 import { ChevronRight, Zap, Send, CheckCircle2, AlertTriangle } from "lucide-react";
 import { formatSlot } from "@/lib/utils";
 import RunMatchingButton from "@/components/RunMatchingButton";
 import SendNotificationsButton from "@/components/SendNotificationsButton";
 import DeleteButton from "@/components/DeleteButton";
+import ClearMatchesButton from "@/components/ClearMatchesButton";
 
 interface Props { params: Promise<{ id: string }> }
 
@@ -52,6 +53,12 @@ export default async function MatchesPage({ params }: Props) {
           </p>
         </div>
         <div className="flex gap-3">
+          {matches.length > 0 && (
+            <ClearMatchesButton
+              action={clearAllMatches.bind(null, id)}
+              count={matches.length}
+            />
+          )}
           <RunMatchingButton action={generateMatches.bind(null, id)} />
           {matches.length > 0 && (
             <SendNotificationsButton

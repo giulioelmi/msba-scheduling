@@ -114,3 +114,11 @@ export async function deleteMatch(matchId: string, cycleId: string) {
   revalidatePath(`/admin/cycles/${cycleId}/matches`);
   return { success: true };
 }
+
+export async function clearAllMatches(cycleId: string) {
+  const db = createServiceRoleClient();
+  const { error } = await db.from("matches").delete().eq("cycle_id", cycleId);
+  if (error) return { error: error.message };
+  revalidatePath(`/admin/cycles/${cycleId}/matches`);
+  return { success: true };
+}
